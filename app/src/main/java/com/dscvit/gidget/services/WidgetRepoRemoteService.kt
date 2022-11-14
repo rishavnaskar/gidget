@@ -1,4 +1,4 @@
-package com.dscvit.gidget.adapters
+package com.dscvit.gidget.services
 
 import android.content.Context
 import android.content.Intent
@@ -7,6 +7,7 @@ import android.view.View
 import android.widget.RemoteViews
 import android.widget.RemoteViewsService
 import com.dscvit.gidget.R
+import com.dscvit.gidget.common.Constants
 import com.dscvit.gidget.common.RoundedTransformation
 import com.dscvit.gidget.common.Utils
 import com.dscvit.gidget.models.activity.widget.AddToWidget
@@ -23,14 +24,14 @@ class WidgetRepoRemoteViewsFactory(
 ) :
     RemoteViewsService.RemoteViewsFactory {
     private var dataSource: ArrayList<AddToWidget> = arrayListOf()
-    private val utils = Utils()
+    private val utils = Utils(context)
 
     override fun onCreate() {}
 
     override fun onDataSetChanged() {
         dataSource = try {
-            if (!utils.isEmpty(context))
-                utils.getArrayList(context) ?: arrayListOf()
+            if (!utils.isEmpty())
+                utils.getArrayList() ?: arrayListOf()
             else
                 arrayListOf()
         } catch (error: Exception) {
@@ -73,7 +74,7 @@ class WidgetRepoRemoteViewsFactory(
 
             // setting clickIntent
             val clickIntent = Intent(context, WidgetRepoRemoteService::class.java)
-            clickIntent.action = Utils.getOnWidgetItemClickedAction()
+            clickIntent.action = Constants.onWidgetItemClicked
             clickIntent.putExtra("dataSource", dataSource[position])
             views.setOnClickFillInIntent(R.id.appWidgetRecyclerItem, clickIntent)
 

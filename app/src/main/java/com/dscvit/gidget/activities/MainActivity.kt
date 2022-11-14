@@ -23,15 +23,21 @@ import retrofit2.Response
 class MainActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
     private lateinit var loginButton: Button
-    private val clientID: String = Security.getClientId()
-    private val clientSecret: String = Security.getClientSecret()
+    private lateinit var security: Security
+    private lateinit var utils: Utils
+    private lateinit var clientID: String
+    private lateinit var clientSecret: String
     private val redirectUrl: String = "gidget://auth"
     private val signUp = SignUp()
-    private val utils = Utils()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        this.security = Security(this)
+        this.utils = Utils(this)
+        clientID = security.getClientId()
+        clientSecret = security.getClientSecret()
 
         if (signUp.isUserSignedUp(this)) {
             startActivity(Intent(this, FeedActivity::class.java))
@@ -100,9 +106,18 @@ class MainActivity : AppCompatActivity() {
                                                                     ?: throw Exception("Gidget is unable access your avatar")
                                                             )
                                                         ) {
-                                                            utils.saveFeedType(this@MainActivity, FeedType.Following)
-                                                            Toast.makeText(this@MainActivity, "Logged in", Toast.LENGTH_SHORT).show()
-                                                            startActivity(Intent(this@MainActivity, FeedActivity::class.java))
+                                                            utils.saveFeedType(FeedType.Following)
+                                                            Toast.makeText(
+                                                                this@MainActivity,
+                                                                "Logged in",
+                                                                Toast.LENGTH_SHORT
+                                                            ).show()
+                                                            startActivity(
+                                                                Intent(
+                                                                    this@MainActivity,
+                                                                    FeedActivity::class.java
+                                                                )
+                                                            )
                                                             finish()
                                                         } else
                                                             throw Exception()
@@ -110,8 +125,16 @@ class MainActivity : AppCompatActivity() {
                                                 } catch (e: Exception) {
                                                     progressBar.visibility = View.INVISIBLE
                                                     loginButton.visibility = View.VISIBLE
-                                                    if (e.message.isNullOrEmpty()) Toast.makeText(this@MainActivity, "We ran into some error!", Toast.LENGTH_SHORT).show()
-                                                    else Toast.makeText(this@MainActivity, e.message, Toast.LENGTH_SHORT).show()
+                                                    if (e.message.isNullOrEmpty()) Toast.makeText(
+                                                        this@MainActivity,
+                                                        "We ran into some error!",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                    else Toast.makeText(
+                                                        this@MainActivity,
+                                                        e.message,
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
                                                 }
                                             }
 
@@ -121,7 +144,11 @@ class MainActivity : AppCompatActivity() {
                                             ) {
                                                 progressBar.visibility = View.INVISIBLE
                                                 loginButton.visibility = View.VISIBLE
-                                                Toast.makeText(this@MainActivity, "Could not fetch user", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(
+                                                    this@MainActivity,
+                                                    "Could not fetch user",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
                                                 println(t.message)
                                             }
                                         })

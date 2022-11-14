@@ -14,6 +14,7 @@ import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.RecyclerView
 import com.dscvit.gidget.R
 import com.dscvit.gidget.activities.DeleteUserFromGidgetActivity
+import com.dscvit.gidget.common.Constants
 import com.dscvit.gidget.common.RoundedTransformation
 import com.dscvit.gidget.common.Utils
 import com.dscvit.gidget.models.activity.widget.AddToWidget
@@ -90,15 +91,15 @@ internal fun updateGidget(
     userMap: MutableMap<String, MutableMap<String, String>>
 ) {
     try {
-        val utils = Utils()
-        var dataSource: ArrayList<AddToWidget>? = utils.getArrayList(context)
+        val utils = Utils(context)
+        var dataSource: ArrayList<AddToWidget>? = utils.getArrayList()
         if (!dataSource.isNullOrEmpty()) {
             dataSource = dataSource.filter { !it.name!!.contains(name) } as ArrayList<AddToWidget>
 
-            if (userMap.isNullOrEmpty()) {
-                utils.deleteArrayList(context)
+            if (userMap.isEmpty()) {
+                utils.deleteArrayList()
                 val widgetIntent = Intent(context, GidgetWidget::class.java)
-                widgetIntent.action = Utils.getClearWidgetItems()
+                widgetIntent.action = Constants.clearWidgetItems
                 context.sendBroadcast(widgetIntent)
                 (context as DeleteUserFromGidgetActivity).finish()
             } else {
@@ -113,7 +114,7 @@ internal fun updateGidget(
                 }
 
                 val widgetIntent = Intent(context, GidgetWidget::class.java)
-                widgetIntent.action = Utils.getOnRefreshButtonClicked()
+                widgetIntent.action = Constants.onRefreshButtonClicked
                 context.sendBroadcast(widgetIntent)
             }
             Toast.makeText(context, "Items removed from Gidget", Toast.LENGTH_SHORT).show()

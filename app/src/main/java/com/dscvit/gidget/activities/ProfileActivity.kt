@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import com.dscvit.gidget.R
 import com.dscvit.gidget.common.Common
+import com.dscvit.gidget.common.Constants
 import com.dscvit.gidget.common.Security
 import com.dscvit.gidget.common.Utils
 import com.dscvit.gidget.interfaces.RetroFitService
@@ -26,6 +27,8 @@ import retrofit2.Response
 
 class ProfileActivity : AppCompatActivity() {
     lateinit var mService: RetroFitService
+    private lateinit var security: Security
+    private lateinit var utils: Utils
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,6 +39,8 @@ class ProfileActivity : AppCompatActivity() {
         val owner: Boolean = bundle.getBoolean("owner")
 
         mService = Common.retroFitService
+        this.security = Security(this)
+        this.utils = Utils(this)
 
         val profilePhotoIV: ImageView = findViewById(R.id.profilePagePhoto)
         val nameTV: TextView = findViewById(R.id.profilePageName)
@@ -90,7 +95,7 @@ class ProfileActivity : AppCompatActivity() {
         progressBar.visibility = View.VISIBLE
         mService.getProfileInfo(
             username,
-            "token ${Security.getToken()}"
+            "token ${security.getToken()}"
         )
             .enqueue(object : Callback<ProfilePageModel> {
                 @SuppressLint("SetTextI18n")
@@ -117,7 +122,7 @@ class ProfileActivity : AppCompatActivity() {
                         logoutButtonText.text = "Logout"
                         logoutButton.setOnClickListener {
                             val widgetIntent = Intent(context, GidgetWidget::class.java)
-                            widgetIntent.action = Utils.getDeleteWidgetAction()
+                            widgetIntent.action = Constants.deleteWidgetWithDatasource
                             context.sendBroadcast(widgetIntent)
 
                             Toast.makeText(applicationContext, "Logged out", Toast.LENGTH_SHORT)
@@ -128,13 +133,12 @@ class ProfileActivity : AppCompatActivity() {
                     } else {
                         logoutButtonText.text = "Add to widget"
                         logoutButton.setOnClickListener {
-                            Utils().addToWidget(
+                            utils.addToWidget(
                                 mService,
                                 true,
                                 username = "$username,true",
                                 name = (if (response.body()!!.name.isNullOrEmpty()) "" else response.body()!!.name)!!,
                                 ownerAvatarUrl = response.body()!!.avatar_url!!,
-                                context = context
                             )
                         }
                     }
@@ -144,7 +148,8 @@ class ProfileActivity : AppCompatActivity() {
                     progressBar.visibility = View.GONE
                     profilePageView.visibility = View.VISIBLE
                     println("Error occurred - $t")
-                    Toast.makeText(baseContext, "Something went wrong...", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(baseContext, "Something went wrong...", Toast.LENGTH_SHORT)
+                        .show()
                 }
             })
     }

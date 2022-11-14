@@ -1,6 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="true" project-jdk-name="1.8" project-jdk-type="JavaSDK">
+  <component name="DesignSurface">
+    <option name="filePathToZoomLevelMap">
+      <map>
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/drawable/appwidget_icon_bg.xml" value="0.1545" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/drawable/appwidget_inner_bg.xml" value="0.1545" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/drawable/gidget_icon.xml" value="0.1545" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/drawable/github_gollum.xml" value="0.125" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/drawable/github_star.xml" value="0.125" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/drawable/gradient_bg.xml" value="0.125" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/drawable/ic_baseline_add_to_home_screen_24.xml" value="0.1545" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/drawable/ic_baseline_arrow_forward_24.xml" value="0.125" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/drawable/ic_baseline_check_24.xml" value="0.125" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/drawable/ic_baseline_content_copy_24.xml" value="0.1285" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/drawable/ic_baseline_delete_24.xml" value="0.1285" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/drawable/ic_baseline_delete_outline_24.xml" value="0.1285" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/drawable/ic_baseline_people_24.xml" value="0.1545" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/drawable/login_button_image.xml" value="0.125" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/drawable/pa_token_btn_bg.xml" value="0.125" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/drawable/pull_request_review_event.xml" value="0.125" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/drawable/roundedbutton_100sdp.xml" value="0.1285" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/drawable/roundedbutton_30dp.xml" value="0.125" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/drawable/roundedbutton_50dp.xml" value="0.136" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/drawable/roundedbutton_8dp.xml" value="0.125" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/drawable/swap_btn_left.xml" value="0.12" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/drawable/widget_bg.xml" value="0.125" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/layout-v28/activity_feed.xml" value="0.1" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/layout/activity_feed.xml" value="0.152" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/layout/activity_main.xml" value="0.1" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/layout/activity_search.xml" value="0.2" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/layout/loading_alertdialog.xml" value="0.11068895643363728" />
+        <entry key="..\:/GDSC VIT/Gidget/app/src/main/res/layout/pa_token_alertdialog.xml" value="0.2" />
+      </map>
+    </option>
+  </component>
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="true" project-jdk-name="11" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
 </project>

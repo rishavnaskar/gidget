@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/darkestBlue"
+    android:orientation="vertical"
+    android:paddingVertical="@dimen/_20sdp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:fontFamily="@font/nexa_bold"
+        android:text="@string/personal_access_token"
+        android:textColor="@color/white"
+        android:textSize="@dimen/_16sdp" />
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginHorizontal="@dimen/_30sdp"
+        android:layout_marginTop="@dimen/_40sdp"
+        app:cardBackgroundColor="@color/feedPageRecyclerItemColor"
+        app:cardCornerRadius="30dp"
+        app:cardElevation="10dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginVertical="@dimen/_6sdp"
+            android:layout_marginStart="@dimen/_10sdp"
+            android:layout_marginEnd="@dimen/_8sdp"
+            android:orientation="horizontal">
+
+            <EditText
+                android:id="@+id/enterPATokenEditText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_weight="10"
+                android:background="@null"
+                android:ellipsize="end"
+                android:fontFamily="@font/montserrat"
+                android:hint="@string/enter_pa_token"
+                android:imeOptions="actionDone"
+                android:importantForAutofill="no"
+                android:inputType="text"
+                android:maxLines="1"
+                android:scrollHorizontally="true"
+                android:textColor="@color/lightGrey"
+                android:textColorHint="@color/lightGrey"
+                android:textSize="@dimen/_12sdp" />
+
+            <androidx.appcompat.widget.AppCompatImageButton
+                android:id="@+id/paTokenSubmitBtn"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginStart="@dimen/_8sdp"
+                android:layout_weight="2.5"
+                android:background="@drawable/roundedbutton_100sdp"
+                android:padding="@dimen/_2sdp"
+                android:src="@drawable/ic_baseline_arrow_forward_24" />
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="@dimen/_10sdp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/paTokenDisplayText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginStart="@dimen/_12sdp"
+            android:layout_marginEnd="@dimen/_20sdp"
+            android:ellipsize="end"
+            android:fontFamily="@font/montserrat"
+            android:maxLength="20"
+            android:maxLines="1"
+            android:scrollHorizontally="true"
+            android:textColor="@color/lightGrey"
+            android:textSize="@dimen/_10sdp" />
+
+        <androidx.appcompat.widget.AppCompatImageButton
+            android:id="@+id/paTokenCopyBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@color/transparent"
+            android:padding="@dimen/_6sdp"
+            android:src="@drawable/ic_baseline_content_copy_24" />
+
+        <androidx.appcompat.widget.AppCompatImageButton
+            android:id="@+id/paTokenDeleteBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@color/transparent"
+            android:padding="@dimen/_6sdp"
+            android:src="@drawable/ic_baseline_delete_outline_24" />
+    </LinearLayout>
+</LinearLayout>

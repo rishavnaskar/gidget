@@ -1,18 +1,17 @@
 package com.dscvit.gidget.common
 
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.appwidget.AppWidgetManager
-import android.content.ComponentName
-import android.content.Context
-import android.content.Intent
-import android.content.SharedPreferences
-import android.graphics.Bitmap
-import android.graphics.BitmapShader
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.RectF
-import android.graphics.Shader
+import android.content.*
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener
+import android.graphics.*
 import android.view.LayoutInflater
+import android.view.inputmethod.EditorInfo
+import android.widget.EditText
+import android.widget.ImageButton
+import android.widget.TextView
+import android.widget.TextView.OnEditorActionListener
 import android.widget.Toast
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
@@ -33,21 +32,15 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import kotlin.Exception
+import kotlin.math.min
+
 
 enum class FeedType {
     Following, Me
 }
 
-class Utils {
-    companion object {
-        fun getOnWidgetItemClickedAction(): String = "onWidgetItemClicked"
-        fun getUpdateWidgetAction(): String = "updateWidgetWithDatasource"
-        fun getOnRefreshButtonClicked(): String = "onRefreshButtonClicked"
-        fun getDeleteWidgetAction(): String = "deleteWidgetWithDatasource"
-        fun getClearWidgetItems(): String = "clearWidgetItems"
-        fun automaticUpdateWidget(): String = "android.appwidget.action.APPWIDGET_UPDATE"
-    }
+class Utils(val context: Context) {
+    private val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
     fun addToWidget(
         mService: RetroFitService,
@@ -55,17 +48,16 @@ class Utils {
         username: String,
         name: String,
         ownerAvatarUrl: String,
-        context: Context,
     ) {
         val appWidgetManager: AppWidgetManager = AppWidgetManager.getInstance(context)
         val appwidgetIDs: IntArray = appWidgetManager
             .getAppWidgetIds(ComponentName(context, GidgetWidget::class.java))
-        val alertDialog: AlertDialog = alertDialog(context)
+        val alertDialog: AlertDialog = addToWidgetAlertDialog()
         if (appwidgetIDs.isNotEmpty()) {
             if (isUser)
                 mService.widgetUserEvents(
                     username.substring(0, username.indexOf(",")),
-                    "token ${Security.getToken()}"
+                    "token ${Security(context).getToken()}"
                 )
                     .enqueue(object : Callback<MutableList<WidgetRepoModel>> {
                         override fun onResponse(
@@ -90,7 +82,7 @@ class Utils {
 
                                     dataSource.add(addToWidget)
                                 }
-                                if (dataSource.isNullOrEmpty())
+                                if (dataSource.isEmpty())
                                     Toast.makeText(
                                         context,
                                         "No activity found for this user",
@@ -99,14 +91,13 @@ class Utils {
                                 else {
                                     saveArrayList(
                                         dataSource = dataSource,
-                                        context = context,
                                         username = username,
                                         name = name,
                                         photoUrl = ownerAvatarUrl,
                                         isUser = isUser
                                     )
                                     val widgetIntent = Intent(context, GidgetWidget::class.java)
-                                    widgetIntent.action = getUpdateWidgetAction()
+                                    widgetIntent.action = Constants.updateWidgetWithDatasource
                                     context.sendBroadcast(widgetIntent)
                                 }
 
@@ -133,7 +124,7 @@ class Utils {
                 mService.widgetRepoEvents(
                     username.substring(0, username.indexOf(",")),
                     name,
-                    "token ${Security.getToken()}"
+                    "token ${Security(context).getToken()}"
                 )
                     .enqueue(object : Callback<MutableList<WidgetRepoModel>> {
                         override fun onResponse(
@@ -159,7 +150,7 @@ class Utils {
                                     dataSource.add(addToWidget)
                                 }
 
-                                if (dataSource.isNullOrEmpty())
+                                if (dataSource.isEmpty())
                                     Toast.makeText(
                                         context,
                                         "No activity found for this repo",
@@ -168,14 +159,13 @@ class Utils {
                                 else {
                                     saveArrayList(
                                         dataSource = dataSource,
-                                        context = context,
                                         username = username,
                                         name = name,
                                         photoUrl = ownerAvatarUrl,
                                         isUser = isUser
                                     )
                                     val widgetIntent = Intent(context, GidgetWidget::class.java)
-                                    widgetIntent.action = getUpdateWidgetAction()
+                                    widgetIntent.action = Constants.updateWidgetWithDatasource
                                     context.sendBroadcast(widgetIntent)
                                 }
 
@@ -207,21 +197,19 @@ class Utils {
 
     fun saveArrayList(
         dataSource: ArrayList<AddToWidget>,
-        context: Context,
         username: String,
         name: String,
         photoUrl: String,
         isUser: Boolean
     ) {
         try {
-            val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
             val editor: SharedPreferences.Editor = prefs.edit()
             val gson = Gson()
-            if (prefs.contains("dataSource")) {
+            if (prefs.contains(Constants.dataSource)) {
                 val userDetailsMap: MutableMap<String, MutableMap<String, String>>? =
-                    getUserDetails(context)
+                    getUserDetails()
                 if (!userDetailsMap.isNullOrEmpty()) {
-                    var userDataSource: ArrayList<AddToWidget>? = getArrayList(context)
+                    var userDataSource: ArrayList<AddToWidget>? = getArrayList()
 
                     if (!userDataSource.isNullOrEmpty()) {
                         if (userDetailsMap.containsKey(username)) {
@@ -231,9 +219,9 @@ class Utils {
                         }
 
                         userDetailsMap[username] = mutableMapOf(
-                            "name" to name,
-                            "photoUrl" to photoUrl,
-                            "isUser" to isUser.toString()
+                            Constants.name to name,
+                            Constants.photoUrl to photoUrl,
+                            Constants.isUser to isUser.toString()
                         )
                         userDataSource.addAll(dataSource)
                         userDataSource.sortWith(SortByDate())
@@ -242,21 +230,21 @@ class Utils {
                             userDataSource.size
                         )
                             .clear()
-                        editor.putString("dataSource", gson.toJson(userDataSource))
-                        editor.putString("userDetails", gson.toJson(userDetailsMap))
+                        editor.putString(Constants.dataSource, gson.toJson(userDataSource))
+                        editor.putString(Constants.userDetails, gson.toJson(userDetailsMap))
                         editor.apply()
                     }
                 }
             } else {
                 val userDetails: MutableMap<String, MutableMap<String, String>> = mutableMapOf(
                     username to mutableMapOf(
-                        "name" to name,
-                        "photoUrl" to photoUrl,
-                        "isUser" to isUser.toString()
+                        Constants.name to name,
+                        Constants.photoUrl to photoUrl,
+                        Constants.isUser to isUser.toString()
                     )
                 )
-                editor.putString("dataSource", gson.toJson(dataSource))
-                editor.putString("userDetails", gson.toJson(userDetails))
+                editor.putString(Constants.dataSource, gson.toJson(dataSource))
+                editor.putString(Constants.userDetails, gson.toJson(userDetails))
                 editor.apply()
             }
         } catch (e: Exception) {
@@ -265,11 +253,10 @@ class Utils {
         }
     }
 
-    fun getArrayList(context: Context): ArrayList<AddToWidget>? {
+    fun getArrayList(): ArrayList<AddToWidget>? {
         return try {
-            val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
             val gson = Gson()
-            val json: String = prefs.getString("dataSource", null).toString()
+            val json: String = prefs.getString(Constants.dataSource, null).toString()
             val type: Type = object : TypeToken<ArrayList<AddToWidget?>?>() {}.type
             gson.fromJson(json, type)
         } catch (e: Exception) {
@@ -277,26 +264,21 @@ class Utils {
         }
     }
 
-    fun deleteAllData(context: Context) {
-        val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-        prefs.edit().clear().apply()
-    }
+    fun deleteAllData() = prefs.edit().clear().apply()
 
-    fun deleteArrayList(context: Context) {
-        val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-        if (prefs.contains("dataSource")) {
+    fun deleteArrayList() {
+        if (prefs.contains(Constants.dataSource)) {
             val editor: SharedPreferences.Editor = prefs.edit()
-            editor.remove("dataSource")
-            editor.remove("userDetails")
+            editor.remove(Constants.dataSource)
+            editor.remove(Constants.userDetails)
             editor.apply()
         }
     }
 
-    fun getUserDetails(context: Context): MutableMap<String, MutableMap<String, String>>? {
-        val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-        return if (prefs.contains("userDetails")) {
+    fun getUserDetails(): MutableMap<String, MutableMap<String, String>>? {
+        return if (prefs.contains(Constants.userDetails)) {
             val gson = Gson()
-            val jsonUserDetails: String = prefs.getString("userDetails", null).toString()
+            val jsonUserDetails: String = prefs.getString(Constants.userDetails, null).toString()
             val jsonUserDetailsType: Type =
                 object : TypeToken<MutableMap<String?, MutableMap<String?, String?>>?>() {}.type
             gson.fromJson(jsonUserDetails, jsonUserDetailsType)
@@ -490,9 +472,9 @@ class Utils {
                 "PullRequestReviewCommentEvent" -> currentItem.payload!!.comment!!.html_url!!
                 "PushEvent" -> try {
                     "https://github.com/${currentItem.repo.name}/commit/${
-                    currentItem.payload?.commits?.get(
-                        0
-                    )?.sha
+                        currentItem.payload?.commits?.get(
+                            0
+                        )?.sha
                     }"
                 } catch (e: Exception) {
                     "https://github.com/${currentItem.repo.name}/commit"
@@ -507,30 +489,137 @@ class Utils {
         }
     }
 
-    fun isEmpty(context: Context): Boolean {
-        val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-        return !prefs.contains("userDetails")
-    }
+    fun isEmpty(): Boolean = !prefs.contains(Constants.userDetails)
 
-    fun saveFeedType(context: Context, feedType: FeedType) {
-        val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-        prefs.edit { this.putString("feedType", feedType.name) }
-    }
+    fun saveFeedType(feedType: FeedType) =
+        prefs.edit { this.putString(Constants.feedType, feedType.name) }
 
-    fun getFeedType(context: Context): String? {
-        val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-        return if (prefs.contains("feedType"))
-            prefs.getString("feedType", null)
-        else
-            null
-    }
+    fun getFeedType(): String? = if (prefs.contains(Constants.feedType))
+        prefs.getString(Constants.feedType, null)
+    else
+        null
 
-    private fun alertDialog(context: Context): AlertDialog {
+    private fun addToWidgetAlertDialog(): AlertDialog {
         val alertDialogView =
             LayoutInflater.from(context).inflate(R.layout.loading_alertdialog, null)
         val alertDialogBuilder =
             AlertDialog.Builder(context).setView(alertDialogView).setCancelable(false)
         return alertDialogBuilder.show()
+    }
+
+    private fun enterPATokenAlertDialog(): AlertDialog {
+        val alertDialogView =
+            LayoutInflater.from(context).inflate(R.layout.pa_token_alertdialog, null)
+        val alertDialogBuilder =
+            AlertDialog.Builder(context).setView(alertDialogView).setCancelable(true)
+        val paEditText = alertDialogView.findViewById<EditText>(R.id.enterPATokenEditText)
+        val paTokenSubmitBtn = alertDialogView.findViewById<ImageButton>(R.id.paTokenSubmitBtn)
+        val paTokenDisplayText = alertDialogView.findViewById<TextView>(R.id.paTokenDisplayText)
+        val paTokenCopyBtn = alertDialogView.findViewById<ImageButton>(R.id.paTokenCopyBtn)
+        val paTokenDeleteBtn = alertDialogView.findViewById<ImageButton>(R.id.paTokenDeleteBtn)
+
+        val alertDialog = alertDialogBuilder.create()
+
+        paTokenSubmitBtn.setOnClickListener {
+            addUserPAToken(paEditText.text.toString())
+        }
+        paEditText.setOnEditorActionListener(OnEditorActionListener { v, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                addUserPAToken(paEditText.text.toString())
+                return@OnEditorActionListener true
+            }
+            false
+        })
+        paTokenCopyBtn.setOnClickListener { copyPAToken() }
+        paTokenDeleteBtn.setOnClickListener { deletePAToken() }
+        handleSharedPrefChange(paTokenDisplayText, alertDialog)
+
+        return alertDialog
+    }
+
+    private fun copyPAToken() {
+        try {
+            val paToken = prefs.getString(Constants.paTokenKey, Security.defaultToken)
+            if (paToken.isNullOrEmpty())
+                throw Exception("Empty token")
+            else if (paToken == Security.defaultToken)
+                throw Exception("Default token cannot copied")
+
+            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager?
+            val clip = ClipData.newPlainText("GitHub Personal Access Token", paToken)
+            clipboard!!.setPrimaryClip(clip)
+            Toast.makeText(context, "Token Copied", Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            println(e.message)
+            Toast.makeText(context, "Failed to copy: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun deletePAToken() {
+        try {
+            when (prefs.getString(Constants.paTokenKey, Security.defaultToken)) {
+                Security.defaultToken -> throw Exception("Default token")
+                null -> throw Exception("Null token")
+                else -> {
+                    val editor = prefs.edit()
+                    editor.remove(Constants.paTokenKey)
+                    editor.apply()
+                    Toast.makeText(context, "Deleted successfully", Toast.LENGTH_LONG).show()
+                }
+            }
+        } catch (e: Exception) {
+            println(e.message)
+            Toast.makeText(context, "Cannot delete: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    fun onPressPATokenButton() = enterPATokenAlertDialog().show()
+
+    private fun addUserPAToken(paToken: String?) {
+        if (paToken.isNullOrEmpty()) {
+            Toast.makeText(context, "Cannot Add Empty PA Token", Toast.LENGTH_LONG).show()
+        } else if (!paToken.startsWith("ghp_")) {
+            Toast.makeText(context, "Invalid PA Token", Toast.LENGTH_LONG).show()
+        } else {
+            val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+            val editor: SharedPreferences.Editor = prefs.edit()
+            editor.putString(Constants.paTokenKey, paToken)
+            editor.apply()
+            Toast.makeText(context, "Token added successfully", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    fun getPAToken(): String? = prefs.getString(Constants.paTokenKey, Security.defaultToken)
+
+    @SuppressLint("SetTextI18n")
+    private fun handleSharedPrefChange(
+        paTokenDisplayTextView: TextView,
+        alertDialog: AlertDialog
+    ) {
+        val currentPAToken = getPAToken()
+        paTokenDisplayTextView.text =
+            if (currentPAToken == Security.defaultToken) "Default Token" else (currentPAToken?.substring(
+                0,
+                min(currentPAToken.length, 20)
+            ) + "...")
+
+        val listener = OnSharedPreferenceChangeListener { prefs, key ->
+            if (key == Constants.paTokenKey) {
+                val paToken = prefs.getString(key, Security.defaultToken)
+                if (paToken == Security.defaultToken)
+                    paTokenDisplayTextView.text = "Default Token"
+                else
+                    paTokenDisplayTextView.text = paToken
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+
+        alertDialog.setOnCancelListener {
+            prefs.unregisterOnSharedPreferenceChangeListener(listener)
+        }
+        alertDialog.setOnDismissListener {
+            prefs.unregisterOnSharedPreferenceChangeListener(listener)
+        }
     }
 }
 

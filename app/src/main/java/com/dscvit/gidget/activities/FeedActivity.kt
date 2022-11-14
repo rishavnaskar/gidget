@@ -1,26 +1,22 @@
 package com.dscvit.gidget.activities
 
+import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.View
-import android.widget.Button
-import android.widget.ImageView
-import android.widget.ProgressBar
-import android.widget.TextView
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
+import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.dscvit.gidget.R
 import com.dscvit.gidget.adapters.FeedPageAdapter
 import com.dscvit.gidget.animations.BounceEdgeEffectFactory
-import com.dscvit.gidget.common.Common
-import com.dscvit.gidget.common.FeedType
-import com.dscvit.gidget.common.Security
-import com.dscvit.gidget.common.SignUp
-import com.dscvit.gidget.common.Utils
+import com.dscvit.gidget.common.*
 import com.dscvit.gidget.interfaces.RetroFitService
 import com.dscvit.gidget.models.activity.feedPage.FeedPageModel
 import com.squareup.picasso.Picasso
@@ -33,95 +29,104 @@ class FeedActivity : AppCompatActivity() {
     private lateinit var layoutManager: LinearLayoutManager
     private lateinit var adapter: FeedPageAdapter
     private val signUp = SignUp()
-    private val utils = Utils()
+    private lateinit var security: Security
+    private lateinit var utils: Utils
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var profilePhoto: ImageView
+    private lateinit var progressBar: ProgressBar
+    private lateinit var searchButton: CardView
+    private lateinit var emptyTextView: TextView
+    private lateinit var pullRefresh: SwipeRefreshLayout
+    private lateinit var swapFollowing: ImageButton
+    private lateinit var swapMe: Button
+    private lateinit var feedTypeTextView: TextView
+    private lateinit var paToken: ImageButton
+    private lateinit var prefs: SharedPreferences
+    private lateinit var listener: SharedPreferences.OnSharedPreferenceChangeListener
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_feed)
 
-        mService = Common.retroFitService
+        this.mService = Common.retroFitService
+        this.security = Security(this)
+        this.utils = Utils(this)
+        this.recyclerView = findViewById(R.id.feedPageRecyclerView)
+        this.profilePhoto = findViewById(R.id.feedPageProfilePhoto)
+        this.progressBar = findViewById(R.id.feedpageProgressBar)
+        this.searchButton = findViewById(R.id.feedPageSearchButton)
+        this.emptyTextView = findViewById(R.id.feedPageEmptyTextView)
+        this.pullRefresh = findViewById(R.id.feedPagePullRefresh)
+        this.swapFollowing = findViewById(R.id.feedPageSwapBtnFollowing)
+        this.swapMe = findViewById(R.id.feedPageSwapBtnMe)
+        this.feedTypeTextView = findViewById(R.id.feedPageFeedTypeTV)
+        this.paToken = findViewById(R.id.feedPagePATokenBtn)
+        this.recyclerView.setHasFixedSize(true)
+
+        this.layoutManager = LinearLayoutManager(this, RecyclerView.VERTICAL, false)
+        this.recyclerView.layoutManager = layoutManager
+        this.recyclerView.edgeEffectFactory = BounceEdgeEffectFactory()
+        prefs = PreferenceManager.getDefaultSharedPreferences(this)
         val signedUpUserMap = signUp.getSignedUpUserDetails(this)
 
-        val recyclerView: RecyclerView = findViewById(R.id.feedPageRecyclerView)
-        val profilePhoto: ImageView = findViewById(R.id.feedPageProfilePhoto)
-        val progressBar: ProgressBar = findViewById(R.id.feedpageProgressBar)
-        val searchButton: CardView = findViewById(R.id.feedPageSearchButton)
-        val emptyTextView: TextView = findViewById(R.id.feedPageEmptyTextView)
-        val pullRefresh: SwipeRefreshLayout = findViewById(R.id.feedPagePullRefresh)
-        val swapFollowing: Button = findViewById(R.id.feedPageSwapBtnFollowing)
-        val swapMe: Button = findViewById(R.id.feedPageSwapBtnMe)
-        recyclerView.setHasFixedSize(true)
-
-        layoutManager = LinearLayoutManager(this, RecyclerView.VERTICAL, false)
-        recyclerView.layoutManager = layoutManager
-        recyclerView.edgeEffectFactory = BounceEdgeEffectFactory()
-
-        getFeedList(
-            recyclerView,
-            progressBar, emptyTextView, swapFollowing, swapMe, signedUpUserMap
-        )
-        getProfilePhoto(profilePhoto, signedUpUserMap)
-        navigateToSearchPage(searchButton)
-
-        pullRefresh.setOnRefreshListener {
-            recyclerView.visibility = View.GONE
-            getFeedList(
-                recyclerView,
-                progressBar, emptyTextView, swapFollowing, swapMe, signedUpUserMap
-            )
-            pullRefresh.isRefreshing = false
-        }
-
-        swapButtonClicked(
-            recyclerView,
-            progressBar, emptyTextView, swapFollowing, swapMe, signedUpUserMap
-        )
+        getFeedList(signedUpUserMap)
+        getProfilePhoto(signedUpUserMap)
+        navigateToSearchPage()
+        pullRefresh.setOnRefreshListener { refreshPage(signedUpUserMap) }
+        swapButtonClicked(signedUpUserMap)
+        onPressPATokenBtn(paToken)
+        this.listener = getSharedPrefListener(signedUpUserMap)
     }
 
-    private fun getFeedList(
-        recyclerView: RecyclerView,
-        progressBar: ProgressBar,
-        emptyTextView: TextView,
-        swapFollowing: Button,
-        swapMe: Button,
-        signedUpUserMap: MutableMap<String, String>
-    ) {
+    override fun onDestroy() {
+        super.onDestroy()
+        prefs.unregisterOnSharedPreferenceChangeListener(this.listener)
+    }
+
+    private fun refreshPage(signedUpUserMap: MutableMap<String, String>) {
+        pullRefresh.isRefreshing = true
+        recyclerView.visibility = View.GONE
+        getFeedList(signedUpUserMap)
+        pullRefresh.isRefreshing = false
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun getFeedList(signedUpUserMap: MutableMap<String, String>) {
         progressBar.visibility = View.VISIBLE
-        val feedType: String? = utils.getFeedType(this)
+        val feedType: String? = utils.getFeedType()
         if (feedType == null) {
-            utils.saveFeedType(this, FeedType.Following)
-            getFeedFollowing(signedUpUserMap, recyclerView, emptyTextView, progressBar)
+            utils.saveFeedType(FeedType.Following)
+            feedTypeTextView.text = "(${FeedType.Following.name})"
+            getFeedFollowing(signedUpUserMap)
         } else {
             when (feedType) {
                 FeedType.Following.name -> {
+                    feedTypeTextView.text = "(${FeedType.Following.name})"
                     swapFollowing.backgroundTintList =
                         ContextCompat.getColorStateList(this, R.color.feedPageRecyclerItemColor)
                     swapMe.backgroundTintList =
-                        ContextCompat.getColorStateList(this, R.color.darkBlue)
-                    getFeedFollowing(signedUpUserMap, recyclerView, emptyTextView, progressBar)
+                        ContextCompat.getColorStateList(this, R.color.darkestBlue)
+                    getFeedFollowing(signedUpUserMap)
                 }
                 FeedType.Me.name -> {
+                    feedTypeTextView.text = "(${FeedType.Me.name})"
                     swapFollowing.backgroundTintList =
-                        ContextCompat.getColorStateList(this, R.color.darkBlue)
+                        ContextCompat.getColorStateList(this, R.color.darkestBlue)
                     swapMe.backgroundTintList =
                         ContextCompat.getColorStateList(this, R.color.feedPageRecyclerItemColor)
-                    getFeedMe(signedUpUserMap, recyclerView, emptyTextView, progressBar)
+                    getFeedMe(signedUpUserMap)
                 }
             }
         }
     }
 
-    private fun getFeedFollowing(
-        signedUpUserMap: MutableMap<String, String>,
-        recyclerView: RecyclerView,
-        emptyTextView: TextView,
-        progressBar: ProgressBar
-    ) {
+    private fun getFeedFollowing(signedUpUserMap: MutableMap<String, String>) {
         mService.getFeedFollowing(
             signedUpUserMap["username"]!!,
-            "token ${Security.getToken()}"
+            "token ${security.getToken()}"
         )
             .enqueue(object : Callback<MutableList<FeedPageModel>> {
+                @SuppressLint("NotifyDataSetChanged")
                 override fun onResponse(
                     call: Call<MutableList<FeedPageModel>>,
                     response: Response<MutableList<FeedPageModel>>
@@ -152,17 +157,13 @@ class FeedActivity : AppCompatActivity() {
             })
     }
 
-    private fun getFeedMe(
-        signedUpUserMap: MutableMap<String, String>,
-        recyclerView: RecyclerView,
-        emptyTextView: TextView,
-        progressBar: ProgressBar
-    ) {
+    private fun getFeedMe(signedUpUserMap: MutableMap<String, String>) {
         mService.getFeedMe(
             signedUpUserMap["username"]!!,
-            "token ${Security.getToken()}"
+            "token ${security.getToken()}"
         )
             .enqueue(object : Callback<MutableList<FeedPageModel>> {
+                @SuppressLint("NotifyDataSetChanged")
                 override fun onResponse(
                     call: Call<MutableList<FeedPageModel>>,
                     response: Response<MutableList<FeedPageModel>>
@@ -193,10 +194,7 @@ class FeedActivity : AppCompatActivity() {
             })
     }
 
-    private fun getProfilePhoto(
-        profilePhoto: ImageView,
-        signedUpUserMap: MutableMap<String, String>
-    ) {
+    private fun getProfilePhoto(signedUpUserMap: MutableMap<String, String>) {
         val photoUrl = signedUpUserMap["photoUrl"]
         Picasso.get().load(photoUrl).into(profilePhoto)
         profilePhoto.setOnClickListener {
@@ -207,50 +205,49 @@ class FeedActivity : AppCompatActivity() {
         }
     }
 
-    private fun swapButtonClicked(
-        recyclerView: RecyclerView,
-        progressBar: ProgressBar,
-        emptyTextView: TextView,
-        swapFollowing: Button,
-        swapMe: Button,
-        signedUpUserMap: MutableMap<String, String>
-    ) {
+    @SuppressLint("SetTextI18n")
+    private fun swapButtonClicked(signedUpUserMap: MutableMap<String, String>) {
         swapFollowing.setOnClickListener {
             recyclerView.visibility = View.GONE
             swapFollowing.backgroundTintList =
                 ContextCompat.getColorStateList(this, R.color.feedPageRecyclerItemColor)
-            swapMe.backgroundTintList = ContextCompat.getColorStateList(this, R.color.darkBlue)
-            utils.saveFeedType(this, FeedType.Following)
-            getFeedList(
-                recyclerView,
-                progressBar,
-                emptyTextView,
-                swapFollowing,
-                swapMe,
-                signedUpUserMap
-            )
+            swapMe.backgroundTintList = ContextCompat.getColorStateList(this, R.color.darkestBlue)
+            utils.saveFeedType(FeedType.Following)
+            feedTypeTextView.text = "(${FeedType.Following.name})"
+            getFeedList(signedUpUserMap)
         }
         swapMe.setOnClickListener {
             recyclerView.visibility = View.GONE
             swapFollowing.backgroundTintList =
-                ContextCompat.getColorStateList(this, R.color.darkBlue)
+                ContextCompat.getColorStateList(this, R.color.darkestBlue)
             swapMe.backgroundTintList =
                 ContextCompat.getColorStateList(this, R.color.feedPageRecyclerItemColor)
-            utils.saveFeedType(this, FeedType.Me)
-            getFeedList(
-                recyclerView,
-                progressBar,
-                emptyTextView,
-                swapFollowing,
-                swapMe,
-                signedUpUserMap
-            )
+            utils.saveFeedType(FeedType.Me)
+            feedTypeTextView.text = "(${FeedType.Me.name})"
+            getFeedList(signedUpUserMap)
         }
     }
 
-    private fun navigateToSearchPage(searchButton: CardView) {
+    private fun navigateToSearchPage() {
         searchButton.setOnClickListener {
             startActivity(Intent(this, SearchActivity::class.java))
         }
+    }
+
+    private fun onPressPATokenBtn(paTokenBtn: ImageButton) {
+        paTokenBtn.setOnClickListener {
+            utils.onPressPATokenButton()
+        }
+    }
+
+    private fun getSharedPrefListener(signedUpUserMap: MutableMap<String, String>): SharedPreferences.OnSharedPreferenceChangeListener {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            println(key)
+            if (key == Constants.paTokenKey) {
+                refreshPage(signedUpUserMap)
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        return listener
     }
 }

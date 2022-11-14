@@ -50,7 +50,7 @@ class SearchPageUserAdapter(
         // getProfileDetails
         mService.getProfileInfo(
             currentItem.login,
-            "token ${Security.getToken()}"
+            "token ${Security(context).getToken()}"
         )
             .enqueue(object : Callback<ProfilePageModel> {
                 override fun onResponse(
@@ -80,13 +80,12 @@ class SearchPageUserAdapter(
 
     private fun addToWidget(currentItem: Items) {
         val mService: RetroFitService = Common.retroFitService
-        Utils().addToWidget(
+        Utils(context).addToWidget(
             mService,
             isUser = true,
             username = "${currentItem.login},true",
             name = "",
             ownerAvatarUrl = currentItem.avatar_url,
-            context = context
         )
     }
 

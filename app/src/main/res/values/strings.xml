@@ -43,4 +43,7 @@
     <string name="delete_gidget_items_empty_text">No users/repos added to Gidget</string>
     <string name="public_repositories">Public Repositories</string>
     <string name="me">Me</string>
+    <string name="feed_type">Feed Type</string>
+    <string name="personal_access_token">Personal Access Token</string>
+    <string name="enter_pa_token">enter PA token…</string>
 </resources>

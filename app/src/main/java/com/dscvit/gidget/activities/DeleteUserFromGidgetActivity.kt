@@ -1,5 +1,6 @@
 package com.dscvit.gidget.activities
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.View
 import android.widget.ImageView
@@ -35,6 +36,7 @@ class DeleteUserFromGidgetActivity : AppCompatActivity() {
         backButton.setOnClickListener { finish() }
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     private fun populateData(
         progressBar: ProgressBar,
         emptyTextView: TextView,
@@ -43,10 +45,10 @@ class DeleteUserFromGidgetActivity : AppCompatActivity() {
         recyclerView.visibility = View.GONE
         progressBar.visibility = View.VISIBLE
 
-        val utils = Utils()
-        val userMap: MutableMap<String, MutableMap<String, String>>? = utils.getUserDetails(this)
+        val utils = Utils(this)
+        val userMap: MutableMap<String, MutableMap<String, String>>? = utils.getUserDetails()
 
-        if (utils.isEmpty(this) || userMap.isNullOrEmpty()) {
+        if (utils.isEmpty() || userMap.isNullOrEmpty()) {
             progressBar.visibility = View.GONE
             emptyTextView.visibility = View.VISIBLE
         } else {

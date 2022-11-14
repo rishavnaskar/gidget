@@ -58,7 +58,7 @@
         </activity>
 
         <service
-            android:name=".adapters.WidgetRepoRemoteService"
+            android:name=".services.WidgetRepoRemoteService"
             android:permission="android.permission.BIND_REMOTEVIEWS" />
     </application>
 

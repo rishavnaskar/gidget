@@ -1,5 +1,6 @@
 package com.dscvit.gidget.widget
 
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
@@ -15,13 +16,8 @@ import androidx.preference.PreferenceManager
 import com.dscvit.gidget.R
 import com.dscvit.gidget.activities.DeleteUserFromGidgetActivity
 import com.dscvit.gidget.activities.MainActivity
-import com.dscvit.gidget.adapters.WidgetRepoRemoteService
-import com.dscvit.gidget.common.AppWidgetAlarm
-import com.dscvit.gidget.common.Common
-import com.dscvit.gidget.common.PhoneState
-import com.dscvit.gidget.common.Security
-import com.dscvit.gidget.common.SortByDate
-import com.dscvit.gidget.common.Utils
+import com.dscvit.gidget.common.*
+import com.dscvit.gidget.services.WidgetRepoRemoteService
 import com.dscvit.gidget.models.activity.widget.AddToWidget
 import com.dscvit.gidget.models.activity.widget.WidgetRepoModel
 import com.google.gson.Gson
@@ -30,7 +26,9 @@ import retrofit2.Callback
 import retrofit2.Response
 
 class GidgetWidget : AppWidgetProvider() {
-    private val utils = Utils()
+    private var utils: Utils? = null
+    private var context: Context? = null
+    private var security: Security? = null
     private val mService = Common.retroFitService
     private val phoneState = PhoneState()
 
@@ -39,31 +37,35 @@ class GidgetWidget : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
+        initialiseObjects(context)
         for (appWidgetId in appWidgetIds)
-            updateAppWidget(context, appWidgetManager, appWidgetId, utils)
+            updateAppWidget(context, appWidgetManager, appWidgetId, utils ?: Utils(context))
         super.onUpdate(context, appWidgetManager, appWidgetIds)
     }
 
     override fun onReceive(context: Context?, intent: Intent?) {
+        if (context != null)
+            initialiseObjects(context)
+
         if (intent != null && context != null) {
-            if (intent.action == Utils.getUpdateWidgetAction())
-                widgetActionUpdate(context, utils)
-            if (intent.extras != null && intent.action == Utils.getOnWidgetItemClickedAction())
+            if (intent.action == Constants.appWidgetUpdateAction)
+                widgetActionUpdate(context, utils ?: Utils(context))
+            if (intent.extras != null && intent.action == Constants.onWidgetItemClicked)
                 onItemClicked(intent = intent, context = context)
-            if (intent.action == Utils.getOnRefreshButtonClicked() || intent.action == Utils.automaticUpdateWidget())
+            if (intent.action == Constants.onRefreshButtonClicked || intent.action == Constants.appWidgetUpdateAction)
                 onWidgetRefresh(context, intent)
-            if (intent.action == Utils.getDeleteWidgetAction())
+            if (intent.action == Constants.deleteWidgetWithDatasource)
                 deleteWidgetData(context)
-            if (intent.action == Utils.getClearWidgetItems())
-                clearWidgetItems(context, utils)
+            if (intent.action == Constants.clearWidgetItems)
+                clearWidgetItems(context, utils ?: Utils(context))
             super.onReceive(context, intent)
         }
     }
 
     override fun onEnabled(context: Context) {
-        if (!utils.isEmpty(context)) {
-            onWidgetRefresh(context, Intent(Utils.getOnRefreshButtonClicked()))
-            // AppWidgetAlarm.startGidgetRefresh(context)
+        initialiseObjects(context)
+        if (!utils!!.isEmpty()) {
+            onWidgetRefresh(context, Intent(Constants.onRefreshButtonClicked))
         }
     }
 
@@ -71,14 +73,24 @@ class GidgetWidget : AppWidgetProvider() {
 
     override fun onDeleted(context: Context?, appWidgetIds: IntArray?) {}
 
+    private fun initialiseObjects(context: Context) {
+        if (this.context == null)
+            this.context = context
+        if (this.utils == null)
+            this.utils = Utils(context)
+        if (this.security == null)
+            this.security = Security(context)
+    }
+
     private fun onWidgetRefresh(context: Context, intent: Intent) {
-        val userMap: MutableMap<String, MutableMap<String, String>>? = utils.getUserDetails(context)
+        initialiseObjects(context)
+        val userMap: MutableMap<String, MutableMap<String, String>>? = utils?.getUserDetails()
         if (!userMap.isNullOrEmpty() && phoneState.isPhoneActive(context) && phoneState.isInternetConnected(
                 context
             )
         )
             addToWidget(context, userMap)
-        else if (userMap.isNullOrEmpty() && intent.action == Utils.getOnRefreshButtonClicked())
+        else if (userMap.isNullOrEmpty() && intent.action == Constants.onRefreshButtonClicked)
             Toast.makeText(context, "Cannot refresh empty widget", Toast.LENGTH_SHORT).show()
     }
 
@@ -88,6 +100,7 @@ class GidgetWidget : AppWidgetProvider() {
         i: Int = 0,
         dataSource: ArrayList<AddToWidget> = arrayListOf()
     ) {
+        initialiseObjects(context)
         val views = RemoteViews(context.packageName, R.layout.gidget_widget)
         val appWidgetManager = AppWidgetManager.getInstance(context)
         val appWidgetIds =
@@ -105,7 +118,7 @@ class GidgetWidget : AppWidgetProvider() {
             if (isUser) {
                 mService.widgetUserEvents(
                     key.substring(0, key.indexOf(",")),
-                    "token ${Security.getToken()}"
+                    "token ${Security(context).getToken()}"
                 )
                     .enqueue(object : Callback<MutableList<WidgetRepoModel>> {
                         override fun onResponse(
@@ -115,17 +128,18 @@ class GidgetWidget : AppWidgetProvider() {
                             if (response.body() != null) {
                                 for (res in response.body()!!) {
                                     val addToWidget = AddToWidget()
-                                    val eventsList: List<String> = utils.getEventMessageAndIcon(res)
-
+                                    val eventsList: List<String> =
+                                        utils?.getEventMessageAndIcon(res)
+                                            ?: Utils(context).getEventMessageAndIcon(res)
                                     addToWidget.username = res.actor.login
                                     addToWidget.name = res.repo.name
                                     addToWidget.avatarUrl = res.actor.avatar_url
                                     addToWidget.icon = eventsList[1].toInt()
                                     addToWidget.message = eventsList[0]
-                                    addToWidget.details = utils.getEventDetails(res)
-                                    addToWidget.date = utils.getDate(res)
+                                    addToWidget.details = utils?.getEventDetails(res)
+                                    addToWidget.date = utils?.getDate(res)
                                     addToWidget.dateISO = res.created_at
-                                    addToWidget.htmlUrl = utils.getHtmlUrl(res)
+                                    addToWidget.htmlUrl = utils?.getHtmlUrl(res)
 
                                     dataSource.add(addToWidget)
                                 }
@@ -150,7 +164,7 @@ class GidgetWidget : AppWidgetProvider() {
                         ) {
                             println("ERROR - ${t.message}")
                             views.setViewVisibility(R.id.appwidgetProgressBar, View.GONE)
-                            views.setTextViewText(R.id.appwidgetDate, utils.getTime())
+                            views.setTextViewText(R.id.appwidgetDate, utils?.getTime())
                             appWidgetManager.updateAppWidget(appWidgetIds, views)
                             println("Failed to fetch data")
                         }
@@ -159,7 +173,7 @@ class GidgetWidget : AppWidgetProvider() {
                 mService.widgetRepoEvents(
                     key.substring(0, key.indexOf(",")),
                     name,
-                    "token ${Security.getToken()}"
+                    "token ${Security(context).getToken()}"
                 )
                     .enqueue(object : Callback<MutableList<WidgetRepoModel>> {
                         override fun onResponse(
@@ -169,17 +183,19 @@ class GidgetWidget : AppWidgetProvider() {
                             if (response.body() != null) {
                                 for (res in response.body()!!) {
                                     val addToWidget = AddToWidget()
-                                    val eventsList: List<String> = utils.getEventMessageAndIcon(res)
+                                    val eventsList: List<String> =
+                                        utils?.getEventMessageAndIcon(res)
+                                            ?: Utils(context).getEventMessageAndIcon(res)
 
                                     addToWidget.username = res.actor.login
                                     addToWidget.name = res.repo.name
                                     addToWidget.avatarUrl = res.actor.avatar_url
                                     addToWidget.icon = eventsList[1].toInt()
                                     addToWidget.message = eventsList[0]
-                                    addToWidget.details = utils.getEventDetails(res)
-                                    addToWidget.date = utils.getDate(res)
+                                    addToWidget.details = utils?.getEventDetails(res)
+                                    addToWidget.date = utils?.getDate(res)
                                     addToWidget.dateISO = res.created_at
-                                    addToWidget.htmlUrl = utils.getHtmlUrl(res)
+                                    addToWidget.htmlUrl = utils?.getHtmlUrl(res)
 
                                     dataSource.add(addToWidget)
                                 }
@@ -204,7 +220,7 @@ class GidgetWidget : AppWidgetProvider() {
                         ) {
                             println("ERROR - ${t.message}")
                             views.setViewVisibility(R.id.appwidgetProgressBar, View.GONE)
-                            views.setTextViewText(R.id.appwidgetDate, utils.getTime())
+                            views.setTextViewText(R.id.appwidgetDate, utils?.getTime())
                             appWidgetManager.updateAppWidget(appWidgetIds, views)
                             println("Failed to fetch data")
                         }
@@ -214,7 +230,7 @@ class GidgetWidget : AppWidgetProvider() {
             println(e.message)
             Toast.makeText(context, "Error refreshing Gidget", Toast.LENGTH_SHORT).show()
             views.setViewVisibility(R.id.appwidgetProgressBar, View.GONE)
-            views.setTextViewText(R.id.appwidgetDate, utils.getTime())
+            views.setTextViewText(R.id.appwidgetDate, utils?.getTime())
             appWidgetManager.updateAppWidget(appWidgetIds, views)
         }
     }
@@ -234,21 +250,23 @@ class GidgetWidget : AppWidgetProvider() {
         editor.putString("dataSource", gson.toJson(dataSource))
         editor.apply()
         views.setViewVisibility(R.id.appwidgetProgressBar, View.GONE)
-        views.setTextViewText(R.id.appwidgetDate, utils.getTime())
+        views.setTextViewText(R.id.appwidgetDate, utils?.getTime())
         appWidgetManager.updateAppWidget(appWidgetIds, views)
-        widgetActionUpdate(context, utils)
+        widgetActionUpdate(context, utils ?: Utils(context))
     }
 
     private fun deleteWidgetData(context: Context) {
         AppWidgetAlarm.stopGidgetRefresh(context)
-        utils.deleteAllData(context)
+        utils?.deleteAllData()
         val appWidgetManager = AppWidgetManager.getInstance(context)
-        val appWidgetIds = appWidgetManager.getAppWidgetIds(ComponentName(context, GidgetWidget::class.java))
+        val appWidgetIds =
+            appWidgetManager.getAppWidgetIds(ComponentName(context, GidgetWidget::class.java))
         appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.appwidgetListView)
-        widgetActionUpdate(context, utils)
+        widgetActionUpdate(context, utils ?: Utils(context))
     }
 }
 
+@SuppressLint("UnspecifiedImmutableFlag")
 internal fun updateAppWidget(
     context: Context,
     appWidgetManager: AppWidgetManager,
@@ -266,7 +284,7 @@ internal fun updateAppWidget(
 
     val refreshIntent =
         Intent(context, GidgetWidget::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
-    refreshIntent.action = Utils.getOnRefreshButtonClicked()
+    refreshIntent.action = Constants.onRefreshButtonClicked
     val refreshPendingIntent =
         PendingIntent.getBroadcast(context, 0, refreshIntent, PendingIntent.FLAG_UPDATE_CURRENT)
     views.setOnClickPendingIntent(R.id.appwidgetRefreshButton, refreshPendingIntent)
@@ -287,7 +305,7 @@ internal fun updateAppWidget(
     val clickPendingIntent = PendingIntent.getBroadcast(context, 0, clickIntent, 0)
     views.setPendingIntentTemplate(R.id.appwidgetListView, clickPendingIntent)
 
-    if (utils.isEmpty(context)) {
+    if (utils.isEmpty()) {
         views.setEmptyView(R.id.appwidgetListView, R.id.appwidgetEmptyViewText)
         views.setOnClickPendingIntent(R.id.appwidgetEmptyViewText, buttonPendingIntent)
     } else {
@@ -320,7 +338,7 @@ internal fun widgetActionUpdate(context: Context, utils: Utils) {
     if (appWidgetIds.isNotEmpty()) {
         appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.appwidgetListView)
         updateAppWidget(context, appWidgetManager, appWidgetIds.first(), utils)
-        if (!utils.isEmpty(context))
+        if (!utils.isEmpty())
             AppWidgetAlarm.startGidgetRefresh(context)
     }
 }

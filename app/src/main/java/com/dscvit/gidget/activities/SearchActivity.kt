@@ -1,5 +1,6 @@
 package com.dscvit.gidget.activities
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
@@ -35,11 +36,14 @@ class SearchActivity : AppCompatActivity() {
     lateinit var layoutManager: LinearLayoutManager
     lateinit var userAdapter: SearchPageUserAdapter
     lateinit var repoAdapter: SearchPageRepoAdapter
+    private lateinit var security: Security
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_search)
 
         mService = Common.retroFitService
+        this.security = Security(this)
 
         val backButton: ImageButton = findViewById(R.id.searchPageBackButton)
         val emptySearchTextView: TextView = findViewById(R.id.searchPageNoItemsEmptyTextView)
@@ -136,9 +140,10 @@ class SearchActivity : AppCompatActivity() {
         if (searchType == "users") {
             mService.searchUser(
                 searchText,
-                "token ${Security.getToken()}"
+                "token ${security.getToken()}"
             )
                 .enqueue(object : Callback<SearchPageUserModel> {
+                    @SuppressLint("NotifyDataSetChanged")
                     override fun onResponse(
                         call: Call<SearchPageUserModel>,
                         response: Response<SearchPageUserModel>
@@ -179,8 +184,9 @@ class SearchActivity : AppCompatActivity() {
         } else if (searchType == "repositories") {
             mService.searchRepo(
                 searchText,
-                "token ${Security.getToken()}"
+                "token ${security.getToken()}"
             ).enqueue(object : Callback<SearchPageRepoModel> {
+                @SuppressLint("NotifyDataSetChanged")
                 override fun onResponse(
                     call: Call<SearchPageRepoModel>,
                     response: Response<SearchPageRepoModel>

@@ -19,7 +19,7 @@ class AppWidgetAlarm {
 
                 val alarmIntent =
                     Intent(context.applicationContext, GidgetWidget::class.java).let { intent ->
-                        intent.action = Utils.getOnRefreshButtonClicked()
+                        intent.action = Constants.onRefreshButtonClicked
                         PendingIntent.getBroadcast(context.applicationContext, 0, intent, 0)
                     }
                 with(context.applicationContext.getSystemService(Context.ALARM_SERVICE) as AlarmManager) {
@@ -38,25 +38,15 @@ class AppWidgetAlarm {
         fun stopGidgetRefresh(context: Context) {
             try {
                 val alarmIntent = Intent(context.applicationContext, GidgetWidget::class.java)
-                alarmIntent.action = Utils.getOnRefreshButtonClicked()
-                val pendingIntent = PendingIntent.getBroadcast(context.applicationContext, alarmID, alarmIntent, 0)
-                val alarmManager = context.applicationContext.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                alarmIntent.action = Constants.onRefreshButtonClicked
+                val pendingIntent =
+                    PendingIntent.getBroadcast(context.applicationContext, alarmID, alarmIntent, 0)
+                val alarmManager =
+                    context.applicationContext.getSystemService(Context.ALARM_SERVICE) as AlarmManager
                 alarmManager.cancel(pendingIntent)
             } catch (e: Exception) {
                 println(e.message)
             }
         }
-
-//        fun isGidgetRefreshOn(context: Context): Boolean {
-//            return try {
-//                val alarmIntent = Intent(context.applicationContext, GidgetWidget::class.java)
-//                val alarmManager = context.applicationContext.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-//                alarmManager.nextAlarmClock.showIntent.cancel()
-//                PendingIntent.getBroadcast(context.applicationContext, 0, alarmIntent, 0) != null
-//            } catch (e: Throwable) {
-//                println(e.message)
-//                false
-//            }
-//        }
     }
 }

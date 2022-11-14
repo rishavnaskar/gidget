@@ -61,13 +61,12 @@ class SearchPageRepoAdapter(
 
     private fun addToWidget(currentItem: ItemsRepo) {
         val mService: RetroFitService = Common.retroFitService
-        Utils().addToWidget(
+        Utils(context).addToWidget(
             mService = mService,
             isUser = false,
             username = "${currentItem.owner.login},false",
             name = currentItem.name,
             ownerAvatarUrl = currentItem.owner.avatar_url,
-            context = context
         )
     }
 

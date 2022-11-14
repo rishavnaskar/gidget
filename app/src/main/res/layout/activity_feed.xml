@@ -84,7 +84,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@+id/feedPageAppBar"
-        android:layout_marginHorizontal="@dimen/_17sdp"
+        android:layout_marginHorizontal="@dimen/_10sdp"
         android:layout_marginTop="@dimen/_20sdp"
         android:layout_marginBottom="@dimen/_5sdp">
 
@@ -97,11 +97,21 @@
             android:textColor="@color/white"
             android:textSize="@dimen/_20sdp" />
 
+        <TextView
+            android:id="@+id/feedPageFeedTypeTV"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginStart="@dimen/_5sdp"
+            android:fontFamily="@font/montserrat"
+            android:textColor="@color/lightGrey"
+            android:textSize="@dimen/_10sdp" />
+
         <LinearLayout
             android:id="@+id/feedPageSwapBtnLL"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
+            android:layout_gravity="center_vertical"
             android:orientation="horizontal">
 
             <View
@@ -109,31 +119,41 @@
                 android:layout_height="0dp"
                 android:layout_weight="1" />
 
-            <androidx.appcompat.widget.AppCompatButton
+            <androidx.appcompat.widget.AppCompatImageButton
+                android:id="@+id/feedPagePATokenBtn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/_10sdp"
+                android:background="@drawable/pa_token_btn_bg"
+                android:minWidth="@dimen/_5sdp"
+                android:minHeight="@dimen/_10sdp"
+                android:paddingHorizontal="@dimen/_10sdp"
+                android:paddingVertical="2dp"
+                android:src="@drawable/ic_baseline_vpn_key_24" />
+
+            <androidx.appcompat.widget.AppCompatImageButton
                 android:id="@+id/feedPageSwapBtnFollowing"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/swap_btn_left"
-                android:fontFamily="@font/montserrat"
                 android:minWidth="@dimen/_5sdp"
                 android:minHeight="@dimen/_10sdp"
                 android:paddingHorizontal="@dimen/_10sdp"
-                android:paddingVertical="@dimen/_3sdp"
-                android:text="@string/following"
-                android:textAllCaps="false"
-                android:textColor="@color/white" />
+                android:paddingVertical="2dp"
+                android:src="@drawable/ic_baseline_people_24" />
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/feedPageSwapBtnMe"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center"
                 android:layout_marginStart="@dimen/_2sdp"
                 android:background="@drawable/swap_btn_right"
                 android:fontFamily="@font/montserrat"
                 android:minWidth="@dimen/_5sdp"
                 android:minHeight="@dimen/_10sdp"
                 android:paddingHorizontal="@dimen/_10sdp"
-                android:paddingVertical="@dimen/_3sdp"
+                android:paddingVertical="2.8dp"
                 android:text="@string/me"
                 android:textAllCaps="false"
                 android:textColor="@color/white" />
