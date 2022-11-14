@@ -6,10 +6,11 @@ import android.content.Context
  * @fun getToken - Personal Access Token of user
  * @fun getClientId - Client ID of Gidget
  * @fun getClientSecret - Client Secret of Gidget
+ * @author Rishav Naskar - Default Personal Access(PA) Token is the PA token of the developer
  */
 class Security(val context: Context) {
     companion object {
-        const val defaultToken = "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"
+        const val defaultToken = "--Enter default PA token here--"
     }
 
     fun getToken(): String =

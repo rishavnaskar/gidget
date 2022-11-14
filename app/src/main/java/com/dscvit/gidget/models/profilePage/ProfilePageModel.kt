@@ -15,5 +15,6 @@ data class ProfilePageModel(
     @SerializedName("created_at") val created_at: String? = null,
     @SerializedName("updated_at") val updated_at: String? = null,
     @SerializedName("type") val type: String? = null,
-    @SerializedName("public_repos") val public_repos: Int? = null
+    @SerializedName("public_repos") val public_repos: Int? = null,
+    @SerializedName("message") val message: String? = null,
 )

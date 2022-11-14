@@ -1,6 +1,7 @@
 package com.dscvit.gidget.common
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.AlertDialog
 import android.appwidget.AppWidgetManager
 import android.content.*
@@ -8,17 +9,20 @@ import android.content.SharedPreferences.OnSharedPreferenceChangeListener
 import android.graphics.*
 import android.view.LayoutInflater
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.TextView.OnEditorActionListener
 import android.widget.Toast
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import com.dscvit.gidget.R
 import com.dscvit.gidget.interfaces.RetroFitService
 import com.dscvit.gidget.models.activity.widget.AddToWidget
 import com.dscvit.gidget.models.activity.widget.WidgetRepoModel
+import com.dscvit.gidget.models.profilePage.ProfilePageModel
 import com.dscvit.gidget.widget.GidgetWidget
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -576,16 +580,37 @@ class Utils(val context: Context) {
     fun onPressPATokenButton() = enterPATokenAlertDialog().show()
 
     private fun addUserPAToken(paToken: String?) {
+        hideKeyboardFrom()
         if (paToken.isNullOrEmpty()) {
             Toast.makeText(context, "Cannot Add Empty PA Token", Toast.LENGTH_LONG).show()
         } else if (!paToken.startsWith("ghp_")) {
             Toast.makeText(context, "Invalid PA Token", Toast.LENGTH_LONG).show()
         } else {
-            val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-            val editor: SharedPreferences.Editor = prefs.edit()
-            editor.putString(Constants.paTokenKey, paToken)
-            editor.apply()
-            Toast.makeText(context, "Token added successfully", Toast.LENGTH_LONG).show()
+            Common.retroFitService.getAuthenticatedUser("token $paToken").enqueue(
+                object : Callback<ProfilePageModel> {
+                    override fun onResponse(
+                        call: Call<ProfilePageModel>,
+                        response: Response<ProfilePageModel>
+                    ) {
+                        val user = response.body()
+                        if (user == null || user.login.isNullOrEmpty()) {
+                            Toast.makeText(context, "Invalid PA Token", Toast.LENGTH_LONG)
+                                .show()
+                        } else {
+                            val editor: SharedPreferences.Editor = prefs.edit()
+                            editor.putString(Constants.paTokenKey, paToken)
+                            editor.apply()
+                            Toast.makeText(context, "Token added successfully", Toast.LENGTH_LONG)
+                                .show()
+                        }
+                    }
+
+                    override fun onFailure(call: Call<ProfilePageModel>, t: Throwable) {
+                        println(t.message)
+                        Toast.makeText(context, "Invalid PA Token", Toast.LENGTH_LONG).show()
+                    }
+                }
+            )
         }
     }
 
@@ -619,6 +644,13 @@ class Utils(val context: Context) {
         }
         alertDialog.setOnDismissListener {
             prefs.unregisterOnSharedPreferenceChangeListener(listener)
+        }
+    }
+
+    private fun hideKeyboardFrom() {
+        (context as Activity).currentFocus?.let { view ->
+            val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+            imm?.hideSoftInputFromWindow(view.windowToken, 0)
         }
     }
 }
