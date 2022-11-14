@@ -52,7 +52,7 @@ class GidgetWidget : AppWidgetProvider() {
                 widgetActionUpdate(context, utils ?: Utils(context))
             if (intent.extras != null && intent.action == Constants.onWidgetItemClicked)
                 onItemClicked(intent = intent, context = context)
-            if (intent.action == Constants.onRefreshButtonClicked || intent.action == Constants.appWidgetUpdateAction)
+            if (intent.action == Constants.onRefreshButtonClicked || intent.action == Constants.updateWidgetWithDatasource)
                 onWidgetRefresh(context, intent)
             if (intent.action == Constants.deleteWidgetWithDatasource)
                 deleteWidgetData(context)

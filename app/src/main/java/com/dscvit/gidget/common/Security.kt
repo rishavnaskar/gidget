@@ -10,7 +10,7 @@ import android.content.Context
  */
 class Security(val context: Context) {
     companion object {
-        const val defaultToken = "--Enter default PA token here--"
+        const val defaultToken = "--Enter PA token here--"
     }
 
     fun getToken(): String =

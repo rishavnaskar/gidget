@@ -527,7 +527,7 @@ class Utils(val context: Context) {
         paTokenSubmitBtn.setOnClickListener {
             addUserPAToken(paEditText.text.toString())
         }
-        paEditText.setOnEditorActionListener(OnEditorActionListener { v, actionId, _ ->
+        paEditText.setOnEditorActionListener(OnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 addUserPAToken(paEditText.text.toString())
                 return@OnEditorActionListener true
