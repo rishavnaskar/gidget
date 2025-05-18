@@ -14,6 +14,10 @@
   [![UI ](https://img.shields.io/badge/User%20Interface-Link%20to%20UI-orange?style=flat-square&logo=appveyor)](INSERT_UI_LINK_HERE)
 
 
+## Demo
+https://github.com/user-attachments/assets/3cb4df75-463a-4b0d-a6af-44e77cc1bcd6
+
+
 ## Features
 - [ ]  < Keep track of latest activity of multiple users and repositories >
 - [ ]  < View and your own GitHub profile >
